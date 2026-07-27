@@ -122,9 +122,11 @@ EXTRA_OECMAKE += "-DFLB_DEBUG=No"
 # Build the journald (systemd) input plugin: this collector reads the persistent
 # /var/log/journal window set up by the avocado-diagnostic-log-access change.
 # FLB_IN_SYSTEMD defaults ON upstream and is auto-disabled only when libsystemd
-# is absent, so pin it explicitly and rely on the systemd DEPENDS above to make
-# JOURNALD_FOUND true at configure time.
-EXTRA_OECMAKE += "-DFLB_IN_SYSTEMD=On"
+# is absent. Pin it explicitly so the plugin cannot be silently dropped, but key
+# the pin on the SAME DISTRO_FEATURE that gates libsystemd entering DEPENDS
+# above: the avocado-container distro removes systemd and sets INIT_MANAGER
+# none, and forcing On there would fail configure with no libsystemd to find.
+EXTRA_OECMAKE += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', '-DFLB_IN_SYSTEMD=On', '-DFLB_IN_SYSTEMD=Off', d)}"
 
 FULL_OPTIMIZATION:remove = "${@'-O2' if bb.data.inherits_class('clang', d) else ''}"
 TARGET_CC_ARCH += "${SELECTED_OPTIMIZATION}"
